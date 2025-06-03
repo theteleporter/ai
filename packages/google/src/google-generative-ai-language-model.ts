@@ -189,7 +189,7 @@ export class GoogleGenerativeAILanguageModel implements LanguageModelV2 {
         : (candidate.content.parts ?? []);
 
     for (const part of parts) {
-      if ('text' in part && part.text.length > 0) {
+      if ('text' in part && part.text != null && part.text.length > 0) {
         content.push({ type: 'text', text: part.text });
       } else if ('functionCall' in part) {
         content.push({
@@ -327,7 +327,7 @@ export class GoogleGenerativeAILanguageModel implements LanguageModelV2 {
             if (content != null) {
               const deltaText = getTextFromParts(content.parts);
               if (deltaText != null) {
-                controller.enqueue(deltaText);
+                controller.enqueue({ type: 'text', text: deltaText });
               }
 
               const inlineDataParts = getInlineDataParts(content.parts);
@@ -443,10 +443,22 @@ function getTextFromParts(parts: z.infer<typeof contentSchema>['parts']) {
 
   return textParts == null || textParts.length === 0
     ? undefined
-    : {
-        type: 'text' as const,
-        text: textParts.map(part => part.text).join(''),
-      };
+    : textParts.map(part => part.text).join('');
+}
+
+function getReasoningDetailsFromParts(
+  parts: z.infer<typeof contentSchema>['parts'],
+): Array<{ type: 'text'; text: string }> | undefined {
+  const reasoningParts = parts?.filter(
+    part =>
+      'text' in part && (part as any).thought === true && part.text != null,
+  ) as Array<
+    GoogleGenerativeAIContentPart & { text: string; thought?: boolean }
+  >;
+
+  return reasoningParts == null || reasoningParts.length === 0
+    ? undefined
+    : reasoningParts.map(part => ({ type: 'text', text: part.text }));
 }
 
 function getInlineDataParts(parts: z.infer<typeof contentSchema>['parts']) {
@@ -484,13 +496,10 @@ function extractSources({
 }
 
 const contentSchema = z.object({
-  role: z.string(),
   parts: z
     .array(
       z.union([
-        z.object({
-          text: z.string(),
-        }),
+        // note: order matters since text can be fully empty
         z.object({
           functionCall: z.object({
             name: z.string(),
@@ -502,6 +511,10 @@ const contentSchema = z.object({
             mimeType: z.string(),
             data: z.string(),
           }),
+        }),
+        z.object({
+          text: z.string().nullish(),
+          thought: z.boolean().nullish(),
         }),
       ]),
     )
