@@ -245,6 +245,54 @@ describe('user messages', () => {
       }),
     ).toThrow('Non-PDF files in user messages');
   });
+
+  it('should throw an error for URL-based PDF files when supportsImageUrls is false', () => {
+    expect(() =>
+      convertToAnthropicMessagesPrompt({
+        prompt: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'file',
+                data: new URL('https://example.com/document.pdf'),
+                mimeType: 'application/pdf',
+              },
+            ],
+          },
+        ],
+        sendReasoning: true,
+        warnings: [],
+        supportsImageUrls: false,
+      }),
+    ).toThrowError(
+      'This provider does not support URL-based PDF files. Please use base64-encoded PDF data instead.',
+    );
+  });
+
+  it('should throw an error for URL-based images when supportsImageUrls is false', () => {
+    expect(() =>
+      convertToAnthropicMessagesPrompt({
+        prompt: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image',
+                image: new URL('https://example.com/image.jpg'),
+                mimeType: 'image/jpeg',
+              },
+            ],
+          },
+        ],
+        sendReasoning: true,
+        warnings: [],
+        supportsImageUrls: false,
+      }),
+    ).toThrowError(
+      'This provider does not support URL-based images. Please use base64-encoded image data instead.',
+    );
+  });
 });
 
 describe('tool messages', () => {

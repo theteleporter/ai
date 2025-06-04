@@ -17,10 +17,12 @@ export function convertToAnthropicMessagesPrompt({
   prompt,
   sendReasoning,
   warnings,
+  supportsImageUrls = true,
 }: {
   prompt: LanguageModelV1Prompt;
   sendReasoning: boolean;
   warnings: LanguageModelV1CallWarning[];
+  supportsImageUrls?: boolean;
 }): {
   prompt: AnthropicMessagesPrompt;
   betas: Set<string>;
@@ -101,6 +103,15 @@ export function convertToAnthropicMessagesPrompt({
                   }
 
                   case 'image': {
+                    // Check if URL is supported for this provider
+                    if (part.image instanceof URL && !supportsImageUrls) {
+                      throw new UnsupportedFunctionalityError({
+                        functionality: 'URL-based images',
+                        message:
+                          'This provider does not support URL-based images. Please use base64-encoded image data instead.',
+                      });
+                    }
+
                     anthropicContent.push({
                       type: 'image',
                       source:
@@ -124,6 +135,15 @@ export function convertToAnthropicMessagesPrompt({
                     if (part.mimeType !== 'application/pdf') {
                       throw new UnsupportedFunctionalityError({
                         functionality: 'Non-PDF files in user messages',
+                      });
+                    }
+
+                    // Check if URL is supported for this provider
+                    if (part.data instanceof URL && !supportsImageUrls) {
+                      throw new UnsupportedFunctionalityError({
+                        functionality: 'URL-based PDF files',
+                        message:
+                          'This provider does not support URL-based PDF files. Please use base64-encoded PDF data instead.',
                       });
                     }
 
