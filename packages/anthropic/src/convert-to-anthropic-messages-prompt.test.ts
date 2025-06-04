@@ -213,7 +213,7 @@ describe('user messages', () => {
             content: [
               {
                 type: 'file',
-                data: 'data:text/plain;base64,SGVsbG8gV29ybGQ=',
+                data: 'SGVsbG8gV29ybGQ=',
                 mimeType: 'text/plain',
               },
             ],
