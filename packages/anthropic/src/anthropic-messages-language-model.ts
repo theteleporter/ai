@@ -121,7 +121,6 @@ export class AnthropicMessagesLanguageModel implements LanguageModelV1 {
         prompt,
         sendReasoning: this.settings.sendReasoning ?? true,
         warnings,
-        supportsImageUrls: this.config.supportsImageUrls,
       });
 
     const anthropicOptions = parseProviderOptions({

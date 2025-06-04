@@ -204,7 +204,7 @@ describe('user messages', () => {
     });
   });
 
-  it('should throw error for non-PDF file types', async () => {
+  it('should throw error for non-PDF file types', () => {
     expect(() =>
       convertToAnthropicMessagesPrompt({
         prompt: [
@@ -213,7 +213,7 @@ describe('user messages', () => {
             content: [
               {
                 type: 'file',
-                data: 'base64data',
+                data: 'data:text/plain;base64,SGVsbG8gV29ybGQ=',
                 mimeType: 'text/plain',
               },
             ],
@@ -246,52 +246,84 @@ describe('user messages', () => {
     ).toThrow('Non-PDF files in user messages');
   });
 
-  it('should throw an error for URL-based PDF files when supportsImageUrls is false', () => {
-    expect(() =>
-      convertToAnthropicMessagesPrompt({
-        prompt: [
+  it('should handle URL-based PDF files properly', () => {
+    const result = convertToAnthropicMessagesPrompt({
+      prompt: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'file',
+              data: new URL('https://example.com/document.pdf'),
+              mimeType: 'application/pdf',
+            },
+          ],
+        },
+      ],
+      sendReasoning: true,
+      warnings: [],
+    });
+
+    expect(result).toEqual({
+      prompt: {
+        messages: [
           {
             role: 'user',
             content: [
               {
-                type: 'file',
-                data: new URL('https://example.com/document.pdf'),
-                mimeType: 'application/pdf',
+                type: 'document',
+                source: {
+                  type: 'url',
+                  url: 'https://example.com/document.pdf',
+                },
               },
             ],
           },
         ],
-        sendReasoning: true,
-        warnings: [],
-        supportsImageUrls: false,
-      }),
-    ).toThrowError(
-      'This provider does not support URL-based PDF files. Please use base64-encoded PDF data instead.',
-    );
+        system: undefined,
+      },
+      betas: new Set(['pdfs-2024-09-25']),
+    });
   });
 
-  it('should throw an error for URL-based images when supportsImageUrls is false', () => {
-    expect(() =>
-      convertToAnthropicMessagesPrompt({
-        prompt: [
+  it('should handle URL-based images properly', () => {
+    const result = convertToAnthropicMessagesPrompt({
+      prompt: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              image: new URL('https://example.com/image.jpg'),
+              mimeType: 'image/jpeg',
+            },
+          ],
+        },
+      ],
+      sendReasoning: true,
+      warnings: [],
+    });
+
+    expect(result).toEqual({
+      prompt: {
+        messages: [
           {
             role: 'user',
             content: [
               {
                 type: 'image',
-                image: new URL('https://example.com/image.jpg'),
-                mimeType: 'image/jpeg',
+                source: {
+                  type: 'url',
+                  url: 'https://example.com/image.jpg',
+                },
               },
             ],
           },
         ],
-        sendReasoning: true,
-        warnings: [],
-        supportsImageUrls: false,
-      }),
-    ).toThrowError(
-      'This provider does not support URL-based images. Please use base64-encoded image data instead.',
-    );
+        system: undefined,
+      },
+      betas: new Set(),
+    });
   });
 });
 
