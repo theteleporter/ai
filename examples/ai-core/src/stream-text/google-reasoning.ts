@@ -1,53 +1,25 @@
 import { google, GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
 import { streamText } from 'ai';
 import 'dotenv/config';
-import { weatherTool } from '../tools/weather-tool';
 
 async function main() {
   const result = streamText({
-    model: google('gemini-2.5-flash-preview-05-20'),
-    tools: { weather: weatherTool },
-    prompt: 'What is the weather in San Francisco?',
+    model: google('gemini-2.5-flash-preview-04-17'),
+    prompt: 'Tell me the history of the San Francisco Mission-style burrito.',
     providerOptions: {
       google: {
         thinkingConfig: {
           thinkingBudget: 1024,
         },
-      } satisfies GoogleGenerativeAIProviderOptions,
+      },
     },
-    onError: console.error,
   });
 
   for await (const part of result.fullStream) {
-    switch (part.type) {
-      case 'text': {
-        process.stdout.write(part.text);
-        break;
-      }
-
-      case 'reasoning': {
-        process.stdout.write('\x1b[34m' + part.text + '\x1b[0m');
-        break;
-      }
-
-      case 'tool-call': {
-        process.stdout.write(
-          `\nTool call: '${part.toolName}' ${JSON.stringify(part.args)}`,
-        );
-        break;
-      }
-
-      case 'tool-result': {
-        process.stdout.write(
-          `\nTool response: '${part.toolName}' ${JSON.stringify(part.result)}`,
-        );
-        break;
-      }
-
-      case 'error': {
-        process.stdout.write('\x1b[31m' + part.error + '\x1b[0m');
-        break;
-      }
+    if (part.type === 'reasoning') {
+      process.stdout.write('\x1b[34m' + part.text + '\x1b[0m');
+    } else if (part.type === 'text') {
+      process.stdout.write(part.text);
     }
   }
 
