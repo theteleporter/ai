@@ -325,9 +325,19 @@ export class GoogleGenerativeAILanguageModel implements LanguageModelV2 {
 
             // Process tool call's parts before determining finishReason to ensure hasToolCalls is properly set
             if (content != null) {
+              // Handle regular text parts (excluding reasoning)
               const deltaText = getTextFromParts(content.parts);
               if (deltaText != null) {
                 controller.enqueue({ type: 'text', text: deltaText });
+              }
+
+              // Handle reasoning parts separately
+              const reasoningText = getReasoningTextFromParts(content.parts);
+              if (reasoningText != null) {
+                controller.enqueue({
+                  type: 'reasoning',
+                  text: reasoningText,
+                });
               }
 
               const inlineDataParts = getInlineDataParts(content.parts);
@@ -437,13 +447,27 @@ function getToolCallsFromParts({
 }
 
 function getTextFromParts(parts: z.infer<typeof contentSchema>['parts']) {
-  const textParts = parts?.filter(part => 'text' in part) as Array<
-    GoogleGenerativeAIContentPart & { text: string }
-  >;
+  const textParts = parts?.filter(
+    part => 'text' in part && !(part as any).thought,
+  ) as Array<GoogleGenerativeAIContentPart & { text: string }>;
 
   return textParts == null || textParts.length === 0
     ? undefined
     : textParts.map(part => part.text).join('');
+}
+
+function getReasoningTextFromParts(
+  parts: z.infer<typeof contentSchema>['parts'],
+) {
+  const reasoningParts = parts?.filter(
+    part => 'text' in part && (part as any).thought === true,
+  ) as Array<
+    GoogleGenerativeAIContentPart & { text: string; thought?: boolean }
+  >;
+
+  return reasoningParts == null || reasoningParts.length === 0
+    ? undefined
+    : reasoningParts.map(part => part.text).join('');
 }
 
 function getReasoningDetailsFromParts(

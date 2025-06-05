@@ -2027,9 +2027,9 @@ describe('doStream', () => {
 
     expect(relevantEvents).toStrictEqual([
       { type: 'text', text: 'Text delta 1. ' },
-      { type: 'reasoning', textDelta: 'Reasoning delta 1.' },
+      { type: 'reasoning', text: 'Reasoning delta 1.' },
       { type: 'text', text: 'Text delta 2.' },
-      { type: 'reasoning', textDelta: 'Reasoning delta 2.' },
+      { type: 'reasoning', text: 'Reasoning delta 2.' },
     ]);
 
     const finishEvent = events.find(event => event.type === 'finish');
@@ -2038,8 +2038,11 @@ describe('doStream', () => {
       'stop',
     );
     expect(finishEvent?.type === 'finish' && finishEvent.usage).toStrictEqual({
-      promptTokens: 15,
-      completionTokens: 25,
+      inputTokens: 15,
+      outputTokens: 25,
+      totalTokens: 40,
+      reasoningTokens: undefined,
+      cachedInputTokens: undefined,
     });
   });
 });
